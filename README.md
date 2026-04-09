@@ -59,7 +59,7 @@ Example with CLI overrides:
 
 ```bash
 python3 main.py \
-  --rtsp "rtsp://user:Iam_User1@10.129.4.100:554/cam/realmonitor?channel=21&subtype=1" \
+  --rtsp "rtsp://user:test@123.23.4.4:443/cam/realmonitor?channel=21&subtype=1" \
   --line-y 260 \
   --conf 0.35 \
   --width 640 \
