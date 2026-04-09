@@ -11,7 +11,7 @@ class Settings:
     model_path: str = "models/yolov8n.pt"
     person_class_id: int = 0
     confidence_threshold: float = 0.35
-    frame_width: int = 640
+    frame_width: int = 512
     line_y: int | None = None
     line_y_ratio: float = 0.45
     reconnect_delay_sec: float = 2.0
@@ -24,6 +24,10 @@ class Settings:
     log_file: str = "counts.log"
     cpu_threads: int = 2
     tracker_config: str = "bytetrack.yaml"
+    use_latest_frame_reader: bool = True
+    skip_frames: int = 1
+    use_tracker: bool = False
+    no_tracker_max_distance: int = 70
 
 
 DEFAULT_SETTINGS = Settings()

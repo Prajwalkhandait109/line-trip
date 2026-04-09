@@ -49,7 +49,12 @@ wget -O models/yolov8n.pt https://github.com/ultralytics/assets/releases/downloa
 
 ## Run
 
-Default run (uses RTSP URL in `config.py`):
+Default run (uses RTSP URL in `config.py` with low-latency defaults):
+
+- Latest-frame reader: enabled
+- Frame skip: `1` (process every 2nd frame)
+- Tracker: disabled (lightweight centroid ID mode)
+- Width: `512`
 
 ```bash
 python3 main.py
@@ -65,6 +70,18 @@ python3 main.py \
   --width 640 \
   --save-snapshots \
   --log-counts
+```
+
+Low-latency mode (same behavior as current defaults):
+
+```bash
+python3 main.py --low-latency --width 512 --skip-frames 1 --no-tracker
+```
+
+Optional lightweight no-tracker fallback:
+
+```bash
+python3 main.py --low-latency --no-tracker --skip-frames 1 --width 512
 ```
 
 Press `ESC` to exit when display is enabled.
