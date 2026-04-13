@@ -1,87 +1,106 @@
-# Line Crossing RPi
+# Line Crossing (YOLOv5 ONNX, Raspberry Pi, Python 3.7)
 
-Real-time people `IN/OUT` counting from an RTSP stream using YOLOv8n + tracking, optimized for Raspberry Pi 4 (CPU only).
+Real-time RTSP people counting on Raspberry Pi CPU using:
+- YOLOv5n ONNX detection (OpenCV DNN, no PyTorch on target)
+- Lightweight centroid tracking
+- Line crossing count (IN/OUT)
+- Headless logging (`counts.log`)
 
 ## Project Structure
 
 ```text
 line-trip/
-├── models/
-│   └── yolov8n.pt
-├── src/
-│   ├── detector.py
-│   ├── tracker.py
-│   └── counter.py
 ├── main.py
+├── tracker.py
+├── counter.py
 ├── config.py
-└── requirements.txt
+├── requirements.txt
+└── models/
+    └── yolov5n.onnx
 ```
 
-## Setup (Raspberry Pi)
+## 1) Raspberry Pi Setup (Buster / Python 3.7)
 
-1. Install system packages:
+Use system OpenCV + NumPy:
 
 ```bash
 sudo apt update
-sudo apt install -y python3-pip python3-venv libatlas-base-dev libopenblas-dev
+sudo apt install -y python3-opencv python3-numpy python3-venv
 ```
 
-2. Create and activate a virtual environment:
+Create venv with system packages visible:
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
+python3 -m venv --system-site-packages venv
+source venv/bin/activate
 ```
 
-3. Install Python dependencies:
+Optional pip path (if you prefer pip wheels):
 
 ```bash
-pip install --upgrade pip
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
-4. Download YOLOv8 Nano model into `models/`:
+## 2) Get YOLOv5 ONNX Model
+
+Place model at:
+
+```text
+models/yolov5n.onnx
+```
+
+If you only have `.pt`, export ONNX on another machine (with torch):
 
 ```bash
-mkdir -p models
-wget -O models/yolov8n.pt https://github.com/ultralytics/assets/releases/download/v8.3.0/yolov8n.pt
+python export.py --weights yolov5n.pt --include onnx --img 640
 ```
 
-## Run
+Then copy `yolov5n.onnx` to Pi.
 
-Default run (uses RTSP URL in `config.py` with low-latency defaults):
+## 3) Run
 
-- Latest-frame reader: enabled
-- Frame skip: `1` (process every 2nd frame)
-- Tracker: disabled (lightweight centroid ID mode)
-- Width: `512`
+Headless + logging (recommended):
 
 ```bash
-python3 main.py
+python main.py --model "./models/yolov5n.onnx" --no-display --log-counts --width 512 --skip-frames 1
 ```
 
-Example with CLI overrides:
+No-tracking fallback:
 
 ```bash
-python3 main.py \
-  --rtsp "rtsp://user:test@123.23.4.4:443/cam/realmonitor?channel=21&subtype=1" \
-  --line-y 260 \
-  --conf 0.35 \
-  --width 640 \
-  --save-snapshots \
-  --log-counts
+python main.py --model "./models/yolov5n.onnx" --no-display --log-counts --no-tracking
 ```
 
-Low-latency mode (same behavior as current defaults):
+## CLI
+
+- `--rtsp` RTSP URL override
+- `--line-y` absolute line Y
+- `--conf` confidence threshold
+- `--nms` NMS threshold
+- `--width` frame width
+- `--model` path to `.onnx`
+- `--skip-frames` process one frame every N+1 frames
+- `--no-display` headless mode
+- `--log-counts` write `counts.log`
+- `--no-tracking` disable centroid tracking
+
+## Verify Counting
+
+Run app:
 
 ```bash
-python3 main.py --low-latency --width 512 --skip-frames 1 --no-tracker
+python main.py --model "./models/yolov5n.onnx" --no-display --log-counts
 ```
 
-Optional lightweight no-tracker fallback:
+Watch logs:
 
 ```bash
-python3 main.py --low-latency --no-tracker --skip-frames 1 --width 512
+tail -f counts.log
 ```
 
-Press `ESC` to exit when display is enabled.
+Expected line format:
+
+```text
+2026-04-10 15:40:11,track_id=4,direction=IN,in=1,out=0
+2026-04-10 15:41:03,track_id=7,direction=OUT,in=1,out=1
+```
