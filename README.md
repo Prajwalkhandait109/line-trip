@@ -10,13 +10,14 @@ Real-time RTSP people counting on Raspberry Pi CPU using:
 
 ```text
 line-trip/
-├── main.py
-├── tracker.py
-├── counter.py
-├── config.py
-├── requirements.txt
-└── models/
-    └── yolov5n.onnx
+|- main.py
+|- tracker.py
+|- counter.py
+|- config.py
+|- requirements.txt
+`- models/
+   |- yolov5n_320.onnx
+   `- yolov5n_416.onnx (optional, accuracy profile)
 ```
 
 ## 1) Raspberry Pi Setup (Buster / Python 3.7)
@@ -41,34 +42,40 @@ Optional pip path (if you prefer pip wheels):
 python -m pip install -r requirements.txt
 ```
 
-## 2) Get YOLOv5 ONNX Model
+## 2) Get YOLOv5 ONNX Models
 
-Place model at:
+Place model files in:
 
 ```text
-models/yolov5n.onnx
+models/yolov5n_320.onnx
+models/yolov5n_416.onnx   (optional)
 ```
 
 If you only have `.pt`, export ONNX on another machine (with torch):
 
 ```bash
-python export.py --weights yolov5n.pt --include onnx --img 640
+python export.py --weights yolov5n.pt --include onnx --img 320 --opset 12
+python export.py --weights yolov5n.pt --include onnx --img 416 --opset 12
 ```
-
-Then copy `yolov5n.onnx` to Pi.
 
 ## 3) Run
 
-Headless + logging (recommended):
+Max-FPS profile:
 
 ```bash
-python main.py --model "./models/yolov5n.onnx" --no-display --log-counts --width 512 --skip-frames 1
+python main.py --model "./models/yolov5n_320.onnx" --input-size 320 --no-display --log-counts --width 320 --skip-frames 2
+```
+
+Accuracy profile:
+
+```bash
+python main.py --profile accuracy --model "./models/yolov5n_416.onnx" --input-size 416 --no-display --log-counts
 ```
 
 No-tracking fallback:
 
 ```bash
-python main.py --model "./models/yolov5n.onnx" --no-display --log-counts --no-tracking
+python main.py --model "./models/yolov5n_320.onnx" --input-size 320 --no-display --log-counts --no-tracking
 ```
 
 ## CLI
@@ -78,18 +85,23 @@ python main.py --model "./models/yolov5n.onnx" --no-display --log-counts --no-tr
 - `--conf` confidence threshold
 - `--nms` NMS threshold
 - `--width` frame width
+- `--input-size` ONNX input size (must match model export)
 - `--model` path to `.onnx`
 - `--skip-frames` process one frame every N+1 frames
 - `--no-display` headless mode
 - `--log-counts` write `counts.log`
 - `--no-tracking` disable centroid tracking
+- `--profile` `max_fps` or `accuracy`
+- `--hysteresis-px` line hysteresis band
+- `--count-cooldown` minimum frames between counts per ID
+- `--debug` and `--debug-interval` runtime timing diagnostics
 
 ## Verify Counting
 
 Run app:
 
 ```bash
-python main.py --model "./models/yolov5n.onnx" --no-display --log-counts
+python main.py --model "./models/yolov5n_320.onnx" --input-size 320 --no-display --log-counts --debug --debug-interval 1.0
 ```
 
 Watch logs:

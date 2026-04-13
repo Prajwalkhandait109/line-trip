@@ -10,17 +10,21 @@ class CentroidTracker(object):
         self.max_missed_frames = max_missed_frames
         self.next_object_id = 1
         self.objects = OrderedDict()  # object_id -> (cx, cy)
+        self.bboxes = OrderedDict()   # object_id -> (x1, y1, x2, y2)
         self.disappeared = OrderedDict()  # object_id -> missed frame count
 
-    def _register(self, centroid):
+    def _register(self, centroid, bbox=(0, 0, 0, 0)):
         object_id = self.next_object_id
         self.next_object_id += 1
         self.objects[object_id] = centroid
+        self.bboxes[object_id] = bbox
         self.disappeared[object_id] = 0
 
     def _deregister(self, object_id):
         if object_id in self.objects:
             del self.objects[object_id]
+        if object_id in self.bboxes:
+            del self.bboxes[object_id]
         if object_id in self.disappeared:
             del self.disappeared[object_id]
 
@@ -41,13 +45,17 @@ class CentroidTracker(object):
                 self.disappeared[object_id] += 1
                 if self.disappeared[object_id] > self.max_missed_frames:
                     self._deregister(object_id)
-            return []
+            # Return still-live tracks at their last known position
+            return [
+                {"track_id": oid, "bbox": self.bboxes[oid], "centroid": self.objects[oid], "confidence": 0.0}
+                for oid in self.objects
+            ]
 
         input_centroids = [d["centroid"] for d in detections]
 
         if len(self.objects) == 0:
-            for c in input_centroids:
-                self._register(c)
+            for i, c in enumerate(input_centroids):
+                self._register(c, detections[i]["bbox"])
             return self._attach_ids(detections, list(self.objects.keys()))
 
         object_ids = list(self.objects.keys())
@@ -87,6 +95,7 @@ class CentroidTracker(object):
         for row, col in matches:
             object_id = object_ids[row]
             self.objects[object_id] = input_centroids[col]
+            self.bboxes[object_id] = detections[col]["bbox"]
             self.disappeared[object_id] = 0
 
         unmatched_rows = set(range(len(object_ids))) - used_rows
@@ -98,7 +107,7 @@ class CentroidTracker(object):
 
         unmatched_cols = set(range(len(input_centroids))) - used_cols
         for col in unmatched_cols:
-            self._register(input_centroids[col])
+            self._register(input_centroids[col], detections[col]["bbox"])
 
         # Build mapping from centroid to recently updated IDs.
         assigned_ids = []

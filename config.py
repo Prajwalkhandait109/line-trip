@@ -9,24 +9,26 @@ class Settings:
         "rtsp://user:Iam_User1@10.129.4.100:554/"
         "cam/realmonitor?channel=23&subtype=1"
     )
-    model_path: str = "models/yolov5n.onnx"
+    model_path: str = "models/yolov5n_320.onnx"
     person_class_id: int = 0
-    confidence_threshold: float = 0.15
+    confidence_threshold: float = 0.05
     nms_threshold: float = 0.45
-    model_input_size: int = 640
-    frame_width: int = 416
+    model_input_size: int = 320
+    frame_width: int = 320
     line_y: Optional[int] = None
     line_y_ratio: float = 0.45
     reconnect_delay_sec: float = 2.0
-    stale_track_frames: int = 120
-    tracker_max_distance: int = 220
+    stale_track_frames: int = 180
+    tracker_max_distance: int = 260
     show_window: bool = True
-    use_latest_frame_reader: bool = False
-    skip_frames: int = 0
+    use_latest_frame_reader: bool = True
+    skip_frames: int = 2
     use_tracking: bool = True
+    line_hysteresis_px: int = 4
+    count_cooldown_frames: int = 3
     log_counts: bool = False
     log_file: str = "counts.log"
-    cpu_threads: int = 2
+    cpu_threads: int = 4
 
 
 DEFAULT_SETTINGS = Settings()
