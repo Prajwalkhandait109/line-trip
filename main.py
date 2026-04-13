@@ -10,7 +10,6 @@ import numpy as np
 
 from config import DEFAULT_SETTINGS, Settings, ensure_runtime_dirs, resolve_line_y
 from counter import LineCrossCounter
-from metrics import MetricsCollector
 from tracker import CentroidTracker
 
 
@@ -34,9 +33,6 @@ def parse_args():
     parser.add_argument("--profile", type=str, choices=["accuracy", "max_fps"], default=None, help="Runtime profile preset")
     parser.add_argument("--hysteresis-px", type=int, default=None, help="Line hysteresis band in pixels")
     parser.add_argument("--count-cooldown", type=int, default=None, help="Minimum frames between counts for same ID")
-    parser.add_argument("--report", action="store_true", help="Collect and save performance metrics report on exit")
-    parser.add_argument("--report-dir", type=str, default="reports", help="Directory to save metric reports (default: reports)")
-    parser.add_argument("--report-interval", type=float, default=5.0, help="Seconds between system resource snapshots (default: 5.0)")
     return parser.parse_args()
 
 
@@ -621,16 +617,6 @@ def run():
     tracker = CentroidTracker(max_distance=settings.tracker_max_distance, max_missed_frames=settings.stale_track_frames) if settings.use_tracking else None
     worker = AsyncInferenceWorker(detector, tracker)
 
-    metrics = None
-    if args.report:
-        metrics = MetricsCollector(
-            report_dir=args.report_dir,
-            report_interval_sec=args.report_interval,
-            model_path=settings.model_path,
-            settings=settings,
-        )
-        print("[METRICS] Collection enabled – report will be saved to: {}".format(args.report_dir), flush=True)
-
     reader = None
     cap = None
     if settings.use_latest_frame_reader:
@@ -699,9 +685,6 @@ def run():
                     continue
                 source_frame_index += 1
 
-            if metrics is not None:
-                metrics.record_frame_received()
-
             frame = resize_keep_aspect(frame, settings.frame_width)
             line_y = resolve_line_y(frame.shape[0], settings.line_y, settings.line_y_ratio)
 
@@ -717,8 +700,6 @@ def run():
                 counter.set_line(line_y)
 
             frame_index += 1
-            if metrics is not None:
-                metrics.mark_frame_submitted()
             worker.submit(frame)
 
             tracked_objects, result_id = worker.get_result()
@@ -733,16 +714,6 @@ def run():
                 avg_fwd_ms = detector.last_forward_ms if detect_calls == 1 else (1 - alpha) * avg_fwd_ms + alpha * detector.last_forward_ms
                 avg_post_ms = detector.last_postprocess_ms if detect_calls == 1 else (1 - alpha) * avg_post_ms + alpha * detector.last_postprocess_ms
 
-                if metrics is not None:
-                    confs = [o["confidence"] for o in tracked_objects if o.get("confidence", 0.0) > 0.0]
-                    metrics.record_inference(
-                        preprocess_ms=detector.last_preprocess_ms,
-                        forward_ms=detector.last_forward_ms,
-                        postprocess_ms=detector.last_postprocess_ms,
-                        num_detections=len(confs),
-                        confidences=confs,
-                    )
-
                 # Update counter only when real detections exist (confidence>0).
                 # Frozen tracker positions (confidence=0.0) never move and should not
                 # trigger counter logic - only new inference hits should.
@@ -752,9 +723,6 @@ def run():
                 if events:
                     last_events = events
                     event_display_countdown = EVENT_DISPLAY_FRAMES
-                    if metrics is not None:
-                        for _, direction in events:
-                            metrics.record_crossing(direction)
                     for event_track_id, direction in events:
                         debug_print(
                             debug_enabled,
@@ -795,9 +763,6 @@ def run():
             inst_fps = 1.0 / dt
             fps = inst_fps if fps == 0.0 else (0.9 * fps + 0.1 * inst_fps)
             prev_time = now
-
-            if metrics is not None:
-                metrics.record_display_fps(fps)
 
             draw_overlay(frame=frame, line_y=line_y, in_count=counter.in_count, out_count=counter.out_count, fps=fps)
             cv2.putText(
@@ -846,8 +811,6 @@ def run():
         if cap is not None:
             cap.release()
         cv2.destroyAllWindows()
-        if metrics is not None:
-            metrics.save_report()
 
 
 if __name__ == "__main__":
