@@ -1,6 +1,6 @@
-from __future__ import division
+from __future__ import division #python 2 compatiblity
 
-from collections import OrderedDict
+from collections import OrderedDict #to keep track of insertion order
 from math import sqrt
 
 

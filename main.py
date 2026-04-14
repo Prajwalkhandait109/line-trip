@@ -718,6 +718,7 @@ def run():
                 # Frozen tracker positions (confidence=0.0) never move and should not
                 # trigger counter logic - only new inference hits should.
                 has_real_detections = any(o.get("confidence", 0.0) > 0.0 for o in tracked_objects)
+                events = []
                 if has_real_detections:
                     events = counter.update(tracked_objects, frame_index=detect_calls)
                 if events:

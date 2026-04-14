@@ -1,5 +1,5 @@
-from dataclasses import dataclass
-from pathlib import Path
+from dataclasses import dataclass # define setting class
+from pathlib import Path #file path handler
 from typing import Optional
 
 
@@ -11,7 +11,7 @@ class Settings:
     )
     model_path: str = "models/yolov5n_320.onnx"
     person_class_id: int = 0
-    confidence_threshold: float = 0.05
+    confidence_threshold: float = 0.15
     nms_threshold: float = 0.45
     model_input_size: int = 320
     frame_width: int = 320
