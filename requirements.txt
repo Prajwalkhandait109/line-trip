@@ -1,0 +1,10 @@
+# Raspberry Pi OS 64-bit, Python 3.13 runtime dependencies
+# Headless deployment: use opencv-python-headless to avoid GUI/X11 requirements.
+
+numpy>=2.1.0,<2.3.0
+onnxruntime>=1.20.1,<2.0.0
+opencv-python-headless>=4.10.0.84,<5.0.0
+
+# ByteTrack multi-object tracker (replaces centroid tracker).
+supervision>=0.22.0
+scipy>=1.11.0

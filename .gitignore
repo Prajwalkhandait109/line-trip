@@ -1,0 +1,25 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Model weights (large binaries — store in DVC or download separately)
+*.onnx
+*.pt
+*.weights
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Segment buffer
+/tmp/segments/
